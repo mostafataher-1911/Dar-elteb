@@ -20,7 +20,11 @@ function Addads() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const API_BASE = "https://apilab.runasp.net/api/Responser";
+const API_BASE =
+  import.meta.env.MODE === "development"
+    ? "/api/Responser"
+    : "https://apilab.runasp.net/api/Responser";
+
 
   const convertToBase64 = (file) =>
     new Promise((resolve, reject) => {
