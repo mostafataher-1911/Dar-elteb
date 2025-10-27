@@ -94,7 +94,7 @@ function DashboardLabTests() {
     setShowTypeModal(true);
   };
 
- const saveTest = async () => {
+const saveTest = async () => {
   if (!form.name || !form.price || !form.type) {
     toast.error("من فضلك ادخل اسم التحليل والسعر والنوع");
     return;
@@ -106,38 +106,13 @@ function DashboardLabTests() {
     return;
   }
 
-  let imagePayload = "";
-
-  if (editTest) {
-    // لو فيه تعديل، نستخدم الصورة الجديدة لو موجودة، ولو لا نجيب الصورة القديمة ونحولها Base64
-    if (form.image) {
-      imagePayload = form.image; // الصورة الجديدة Base64
-    } else if (editTest.imageUrl) {
-      try {
-        const res = await fetch(`https://apilab.runasp.net${editTest.imageUrl}`);
-        const blob = await res.blob();
-        const reader = new FileReader();
-        const base64Promise = new Promise((resolve, reject) => {
-          reader.onloadend = () => resolve(reader.result.split(",")[1]);
-          reader.onerror = reject;
-        });
-        reader.readAsDataURL(blob);
-        imagePayload = await base64Promise;
-      } catch (err) {
-        toast.error("فشل تحويل الصورة القديمة إلى Base64");
-        return;
-      }
-    }
-  } else {
-    imagePayload = form.image || "";
-  }
-
+  // ✅ فقط نرسل Base64 إذا المستخدم رفع صورة جديدة
   const payload = {
     name: form.name,
-    imageBase64: imagePayload,
     price: Number(form.price),
     categoryId: selectedType.id,
     orderRank: 0,
+    ...(form.image ? { imageBase64: form.image } : {}), // إذا الصورة موجودة
   };
 
   try {
@@ -147,10 +122,12 @@ function DashboardLabTests() {
 
     const method = editTest ? "PUT" : "POST";
 
+    const bodyData = editTest ? { ...payload, id: editTest.id } : payload;
+
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editTest ? { ...payload, id: editTest.id } : payload),
+      body: JSON.stringify(bodyData),
     });
 
     const data = await res.json();
@@ -161,7 +138,8 @@ function DashboardLabTests() {
     } else {
       toast.error(data.message || "حدث خطأ أثناء الحفظ");
     }
-  } catch {
+  } catch (err) {
+    console.error(err);
     toast.error("خطأ في الاتصال بالخادم");
   }
 };

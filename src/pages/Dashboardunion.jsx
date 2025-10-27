@@ -133,55 +133,94 @@ function Dashboardunion() {
     }
   }, [form, unions, fetchData]);
 
-  const updateUnion = useCallback(async () => {
-    if (!form.name || !form.discount) return toast.error("من فضلك أدخل اسم النقابة ونسبة الخصم");
+const updateUnion = useCallback(async () => {
+  if (!form.name || !form.discount)
+    return toast.error("من فضلك أدخل اسم النقابة ونسبة الخصم");
 
-    setProcessing(true);
-    let imageToSend = form.imageBase64;
+  setProcessing(true);
 
-    if (!form.imageBase64 && editUnion?.imageUrl) {
-      try {
-        const res = await fetch(`https://apilab.runasp.net${editUnion.imageUrl}`);
-        const blob = await res.blob();
-        const reader = new FileReader();
-        imageToSend = await new Promise((resolve, reject) => {
-          reader.onloadend = () => resolve(reader.result.split(",")[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      } catch {
-        toast.error("تعذر تحميل الصورة القديمة");
-        setProcessing(false);
-        return;
-      }
-    }
-
+  try {
     const payload = {
       id: editUnion.id,
       name: form.name,
       disCount: Number(form.discount),
       orderRank: 0,
-      imageBase64: imageToSend,
     };
 
-    try {
-      const res = await fetch(`${API_BASE}/Update`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success("✅ تم تعديل النقابة بنجاح");
-        setShowModal(false);
-        fetchData();
-      } else toast.error("❌ فشل في التعديل");
-    } catch {
-      toast.error("تعذر الاتصال بالسيرفر");
-    } finally {
-      setProcessing(false);
+    // ✅ معالجة الصورة
+    if (form.imageBase64 && form.imageBase64.trim() !== "") {
+      // المستخدم غيّر الصورة
+      payload.imageBase64 = form.imageBase64.split(",")[1];
+    } else if (editUnion.imagePath) {
+      // المستخدم لم يغيّر الصورة، نحاول جلب الصورة القديمة
+      try {
+        const response = await fetch(editUnion.imagePath);
+        const blob = await response.blob();
+
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+          reader.onloadend = () => {
+            if (reader.result) {
+              const base64 = reader.result.split(",")[1];
+              resolve(base64 || null);
+            } else {
+              resolve(null);
+            }
+          };
+          reader.onerror = reject;
+        });
+
+        reader.readAsDataURL(blob);
+        const oldBase64 = await base64Promise;
+        if (oldBase64) {
+          payload.imageBase64 = oldBase64; // فقط إذا كانت الصورة صالحة
+        }
+      } catch (error) {
+        console.warn("⚠️ فشل في تحميل الصورة القديمة:", error);
+        // لا نرسل imageBase64 إذا فشل تحميلها
+      }
     }
-  }, [form, editUnion, fetchData]);
+
+    // تنظيف البيانات: لا نرسل imageBase64 إذا كانت null أو undefined
+    const cleanedData = Object.fromEntries(
+      Object.entries(payload).filter(
+        ([_, value]) => value !== null && value !== undefined
+      )
+    );
+
+    console.log("📤 إرسال بيانات التعديل:", cleanedData);
+
+    const res = await fetch(`${API_BASE}/Update`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cleanedData),
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      console.warn("⚠️ الرد مش JSON، احتمال السيرفر رجّع فاضي");
+    }
+
+    if (!res.ok) {
+      console.error("Server Error:", res.status, data);
+      return toast.error("❌ فشل في الاتصال بالسيرفر أو في البيانات المرسلة");
+    }
+
+    toast.success("✅ تم تعديل النقابة بنجاح");
+    setShowModal(false);
+    fetchData();
+  } catch (err) {
+    console.error("❌ خطأ أثناء الاتصال بالسيرفر:", err);
+    toast.error("تعذر الاتصال بالسيرفر");
+  } finally {
+    setProcessing(false);
+  }
+}, [form, editUnion, fetchData]);
+
+
+
 
   const deleteUnion = useCallback(
     async (id) => {
