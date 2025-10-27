@@ -22,7 +22,11 @@ function Dashboardunion() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const API_BASE = "/api/Union";
+ const API_BASE =
+  import.meta.env.MODE === "development"
+    ? "/api/Union"
+    : "https://apilab.runasp.net/api/Union";
+
 
   useEffect(() => {
     fetchData();
