@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Navbar from "../layout/Navbar";
 import CustomInputicon from "../component/CustomInputicon";
 import CustomButton from "../component/CustomButton";
@@ -18,16 +18,17 @@ function Dashboardunion() {
   const [editUnion, setEditUnion] = useState(null);
   const [form, setForm] = useState({ name: "", discount: "", image: "", imageBase64: "" });
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const API_BASE = "/api/Union"; // استخدم proxy
+  const API_BASE = "/api/Union";
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`${API_BASE}/GetAll`);
@@ -39,128 +40,114 @@ function Dashboardunion() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const convertToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = (error) => reject(error);
-    });
+  const convertToBase64 = useCallback(
+    (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      }),
+    []
+  );
 
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const base64 = await convertToBase64(file);
-      const imageURL = URL.createObjectURL(file);
-      setForm({ ...form, image: imageURL, imageBase64: base64 });
-      toast.success("تم رفع الصورة بنجاح ✅");
-    }
-  };
+  const handleImageChange = useCallback(
+    async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const base64 = await convertToBase64(file);
+        const imageURL = URL.createObjectURL(file);
+        setForm((prev) => ({ ...prev, image: imageURL, imageBase64: base64 }));
+        toast.success("تم رفع الصورة بنجاح ✅");
+        setTimeout(() => URL.revokeObjectURL(imageURL), 2000); // توفير الميموري
+      }
+    },
+    [convertToBase64]
+  );
 
-  const removeImage = () => {
-    setForm({ ...form, image: "", imageBase64: "" });
+  const removeImage = useCallback(() => {
+    setForm((prev) => ({ ...prev, image: "", imageBase64: "" }));
     toast("تم حذف الصورة 🚫", { icon: "🗑️" });
-  };
+  }, []);
 
-  const openModal = (union = null) => {
+  const openModal = useCallback((union = null) => {
     if (union) {
       setEditUnion(union);
       setForm({
         name: union.name,
         discount: union.disCount,
         image: `https://apilab.runasp.net${union.imageUrl}`,
-        imageBase64: "", // فارغ يعني لم يتغير
+        imageBase64: "",
       });
     } else {
       setEditUnion(null);
       setForm({ name: "", discount: "", image: "", imageBase64: "" });
     }
     setShowModal(true);
-  };
+  }, []);
 
-const addUnion = async () => {
-  if (!form.name || !form.discount) {
-    toast.error("من فضلك أدخل اسم النقابة ونسبة الخصم");
-    return;
-  }
+  const addUnion = useCallback(async () => {
+    if (!form.name || !form.discount) return toast.error("من فضلك أدخل اسم النقابة ونسبة الخصم");
+    if (!form.imageBase64) return toast.error("من فضلك اختر صورة للنقابة 📸");
 
-  if (!form.imageBase64) {
-    toast.error("من فضلك اختر صورة للنقابة 📸");
-    return;
-  }
-
-  // ✅ تحقق من الاسم إذا كان موجود بالفعل
-  const nameExists = unions.some(
-    (u) => u.name.trim().toLowerCase() === form.name.trim().toLowerCase()
-  );
-  if (nameExists) {
-    toast.error(`❌ النقابة "${form.name}" موجودة بالفعل`);
-    setShowModal(false); // اغلاق المودال تلقائيًا
-    return; // إيقاف عملية الإضافة
-  }
-
-  const payload = {
-    name: form.name,
-    imageBase64: form.imageBase64,
-    disCount: Number(form.discount),
-    orderRank: 0,
-  };
-
-  try {
-    const res = await fetch(`${API_BASE}/Add`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.success) {
-      toast.success("✅ تمت الإضافة بنجاح");
+    const nameExists = unions.some(
+      (u) => u.name.trim().toLowerCase() === form.name.trim().toLowerCase()
+    );
+    if (nameExists) {
+      toast.error(`❌ النقابة "${form.name}" موجودة بالفعل`);
       setShowModal(false);
-      setForm({ name: "", discount: "", image: "", imageBase64: "" });
-      fetchData();
-    } else toast.error("❌ فشل في الإضافة");
-  } catch {
-    toast.error("تعذر الاتصال بالسيرفر");
-  }
-};
-
-
-  const updateUnion = async () => {
-    if (!form.name || !form.discount) {
-      toast.error("من فضلك أدخل اسم النقابة ونسبة الخصم");
       return;
     }
 
-    let imageToSend = null;
+    const payload = {
+      name: form.name,
+      imageBase64: form.imageBase64,
+      disCount: Number(form.discount),
+      orderRank: 0,
+    };
 
-    if (form.imageBase64 && typeof form.imageBase64 === "string") {
-      // صورة جديدة
-      imageToSend = form.imageBase64.includes(",")
-        ? form.imageBase64.split(",")[1]
-        : form.imageBase64;
-    } else if (editUnion.imageUrl) {
-      // لو ما غيرش الصورة، نحوّل الصورة القديمة من URL لـ Base64
-      const convertUrlToBase64 = async (url) => {
-        const res = await fetch(url);
+    try {
+      setProcessing(true);
+      const res = await fetch(`${API_BASE}/Add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("✅ تمت الإضافة بنجاح");
+        setShowModal(false);
+        setForm({ name: "", discount: "", image: "", imageBase64: "" });
+        fetchData();
+      } else toast.error("❌ فشل في الإضافة");
+    } catch {
+      toast.error("تعذر الاتصال بالسيرفر");
+    } finally {
+      setProcessing(false);
+    }
+  }, [form, unions, fetchData]);
+
+  const updateUnion = useCallback(async () => {
+    if (!form.name || !form.discount) return toast.error("من فضلك أدخل اسم النقابة ونسبة الخصم");
+
+    setProcessing(true);
+    let imageToSend = form.imageBase64;
+
+    if (!form.imageBase64 && editUnion?.imageUrl) {
+      try {
+        const res = await fetch(`https://apilab.runasp.net${editUnion.imageUrl}`);
         const blob = await res.blob();
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64 = reader.result.split(",")[1];
-            resolve(base64);
-          };
+        const reader = new FileReader();
+        imageToSend = await new Promise((resolve, reject) => {
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
-      };
-
-      try {
-        imageToSend = await convertUrlToBase64(`https://apilab.runasp.net${editUnion.imageUrl}`);
-      } catch (err) {
-        console.error("🚨 خطأ في تحويل الصورة القديمة لـ Base64:", err);
-        toast.error("تعذر معالجة الصورة القديمة");
+      } catch {
+        toast.error("تعذر تحميل الصورة القديمة");
+        setProcessing(false);
         return;
       }
     }
@@ -173,59 +160,48 @@ const addUnion = async () => {
       imageBase64: imageToSend,
     };
 
-    console.log("📤 إرسال بيانات التعديل:", payload);
-
     try {
       const res = await fetch(`${API_BASE}/Update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      const text = await res.text();
-      console.log("📩 رد السيرفر:", text);
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        toast.error("❌ الرد من السيرفر ليس بصيغة JSON");
-        return;
-      }
-
+      const data = await res.json();
       if (res.ok && data.success) {
         toast.success("✅ تم تعديل النقابة بنجاح");
         setShowModal(false);
-        setForm({ name: "", discount: "", image: "", imageBase64: "" });
         fetchData();
-      } else {
-        toast.error("❌ فشل في التعديل: " + (data.message || ""));
-      }
-    } catch (err) {
-      console.error("🚨 خطأ أثناء التعديل:", err);
-      toast.error("تعذر الاتصال بالسيرفر أو حدث خطأ بالشبكة");
-    }
-  };
-
-  const deleteUnion = async (id) => {
-    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-    try {
-      const res = await fetch(`${API_BASE}/Delete?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("🗑️ تم حذف النقابة بنجاح");
-        setUnions((prev) => prev.filter((u) => u.id !== id));
-      } else toast.error(data.message || "حدث خطأ أثناء الحذف");
+      } else toast.error("❌ فشل في التعديل");
     } catch {
       toast.error("تعذر الاتصال بالسيرفر");
+    } finally {
+      setProcessing(false);
     }
-  };
+  }, [form, editUnion, fetchData]);
+
+  const deleteUnion = useCallback(
+    async (id) => {
+      if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
+      try {
+        const res = await fetch(`${API_BASE}/Delete?id=${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) {
+          toast.success("🗑️ تم حذف النقابة بنجاح");
+          setUnions((prev) => prev.filter((u) => u.id !== id));
+        } else toast.error(data.message || "حدث خطأ أثناء الحذف");
+      } catch {
+        toast.error("تعذر الاتصال بالسيرفر");
+      }
+    },
+    [API_BASE]
+  );
+
+  const paginatedUnions = useMemo(
+    () => unions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [unions, currentPage]
+  );
 
   const totalPages = Math.ceil(unions.length / itemsPerPage);
-  const paginatedUnions = unions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   return (
     <>
@@ -238,6 +214,7 @@ const addUnion = async () => {
               <button
                 className="flex justify-center items-center gap-2 w-70 p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a]"
                 onClick={() => openModal()}
+                disabled={processing}
               >
                 <PlusCircleIcon className="w-6 h-6" />
                 إضافة نقابة جديدة
@@ -277,12 +254,14 @@ const addUnion = async () => {
                           <button
                             className="text-blue-600 hover:text-blue-800"
                             onClick={() => openModal(item)}
+                            disabled={processing}
                           >
                             <PencilSquareIcon className="w-5 h-5" />
                           </button>
                           <button
                             className="text-red-600 hover:text-red-800"
                             onClick={() => deleteUnion(item.id)}
+                            disabled={processing}
                           >
                             <TrashIcon className="w-5 h-5" />
                           </button>
@@ -302,21 +281,16 @@ const addUnion = async () => {
 
             {/* Pagination */}
             <div className="flex justify-center mt-6 items-center gap-2">
-              {/* Previous button */}
               <button
                 className="btn bg-[#005FA1] text-white"
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || processing}
                 onClick={() => setCurrentPage((p) => p - 1)}
               >
                 الصفحة السابقة
               </button>
-
-              
-
-              {/* Next button */}
               <button
                 className="btn bg-[#005FA1] text-white"
-                disabled={currentPage === totalPages || totalPages === 0}
+                disabled={currentPage === totalPages || totalPages === 0 || processing}
                 onClick={() => setCurrentPage((p) => p + 1)}
               >
                 الصفحة التالية
@@ -386,6 +360,7 @@ const addUnion = async () => {
               <button
                 className="px-3 py-2 bg-gray-300 rounded-lg"
                 onClick={() => setShowModal(false)}
+                disabled={processing}
               >
                 إلغاء
               </button>
@@ -394,15 +369,17 @@ const addUnion = async () => {
                 <button
                   onClick={updateUnion}
                   className="px-4 py-2 bg-[#005FA1] text-white rounded-lg hover:bg-[#00457a]"
+                  disabled={processing}
                 >
-                  حفظ التعديل
+                  {processing ? "جارٍ الحفظ..." : "حفظ التعديل"}
                 </button>
               ) : (
                 <button
                   onClick={addUnion}
                   className="px-4 py-2 bg-[#005FA1] text-white rounded-lg hover:bg-[#00457a]"
+                  disabled={processing}
                 >
-                  حفظ
+                  {processing ? "جارٍ الحفظ..." : "حفظ"}
                 </button>
               )}
             </div>
