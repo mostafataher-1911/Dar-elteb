@@ -88,14 +88,17 @@ const API_BASE =
       });
       const data = await res.json();
 
-      if (data.success) {
-        toast.success("تم رفع الإعلان بنجاح");
-        handleRemoveImage();
-        setShowModal(false);
+     if (data.success) {
+  toast.success("تم رفع الإعلان بنجاح");
+  handleRemoveImage();
+  setShowModal(false);
+  fetchAds(); // ✅ جلب الإعلانات من السيرفر بعد الإضافة
+
 
         // ✅ تحديث محلي بدون إعادة تحميل الكل
-        const newAd = { imageUrl: data.resource?.imageUrl || "" };
-        setAds((prev) => [newAd, ...prev]);
+       const newAd = { id: data.resource?.id, imageUrl: data.resource?.imageUrl || "" };
+setAds((prev) => [newAd, ...prev]);
+
       } else {
         toast.error("حدث خطأ أثناء رفع الإعلان");
       }
