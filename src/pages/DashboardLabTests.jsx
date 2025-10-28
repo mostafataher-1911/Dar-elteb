@@ -22,11 +22,13 @@ function DashboardLabTests() {
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [editTest, setEditTest] = useState(null);
   const [loading, setLoading] = useState(true);
+const [searchTerm, setSearchTerm] = useState("");
 
   const [form, setForm] = useState({
     name: "",
     price: "",
     type: "",
+    coins:"",
     image: "",
     categoryId: "",
   });
@@ -110,6 +112,7 @@ const saveTest = async () => {
   const payload = {
     name: form.name,
     price: Number(form.price),
+      coins: Number(form.coins) || 0,
     categoryId: selectedType.id,
     orderRank: 0,
     ...(form.image ? { imageBase64: form.image } : {}), // إذا الصورة موجودة
@@ -204,9 +207,12 @@ const saveTest = async () => {
     }
   };
 
-  const filteredTests = filterType
-    ? tests.filter((t) => String(t.categoryId) === String(filterType))
-    : tests;
+ const filteredTests = tests.filter((t) => {
+  const matchesType = filterType ? String(t.categoryId) === String(filterType) : true;
+  const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
+  return matchesType && matchesSearch;
+});
+
 
   const totalPages = Math.ceil(filteredTests.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
@@ -220,39 +226,48 @@ const saveTest = async () => {
           <Loading />
         ) : (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <button
-                className="flex justify-center items-center gap-2 p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a]"
-                onClick={() => openTestModal()}
-              >
-                <PlusCircleIcon className="w-6 h-6" />
-                إضافة تحليل جديد
-              </button>
+          <div className="flex justify-between items-center mb-6">
+  <button
+    className="flex justify-center items-center gap-2 p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a]"
+    onClick={() => openTestModal()}
+  >
+    <PlusCircleIcon className="w-6 h-6" />
+    إضافة تحليل جديد
+  </button>
 
-              <select
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  setPage(1);
-                }}
-                className=" text-[#005FA1] border-2 border-[#005FA1] rounded-lg py-2 px-3 outline-none focus:outline-none"
-              >
-                <option value="">جميع انواع التحاليل</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+  <input
+    type="text"
+    placeholder="ابحث باسم التحليل..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="border-2 border-[#005FA1] rounded-lg py-2 px-3 w-64 text-right text-[#005FA1] outline-none focus:ring-0 focus:outline-none"
+  />
 
-              <button
-                className="flex justify-center items-center gap-2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-800"
-                onClick={openTypeModal}
-              >
-                <TagIcon className="w-6 h-6" />
-                إدارة أنواع التحاليل
-              </button>
-            </div>
+  <select
+    value={filterType}
+    onChange={(e) => {
+      setFilterType(e.target.value);
+      setPage(1);
+    }}
+    className=" text-[#005FA1] border-2 border-[#005FA1] rounded-lg py-2 px-3 outline-none focus:outline-none"
+  >
+    <option value="">جميع انواع التحاليل</option>
+    {types.map((t) => (
+      <option key={t.id} value={t.id}>
+        {t.name}
+      </option>
+    ))}
+  </select>
+
+  <button
+    className="flex justify-center items-center gap-2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-800"
+    onClick={openTypeModal}
+  >
+    <TagIcon className="w-6 h-6" />
+    إدارة أنواع التحاليل
+  </button>
+</div>
+
 
             <div className="overflow-x-auto">
               <table className="table table-zebra w-full text-center shadow-md rounded-lg">
@@ -263,6 +278,7 @@ const saveTest = async () => {
                     <th>اسم التحليل</th>
                     <th>النوع</th>
                     <th>السعر</th>
+                    <th>كوينز</th>
                     <th>الإجراءات</th>
                   </tr>
                 </thead>
@@ -287,6 +303,7 @@ const saveTest = async () => {
                           {types.find((t) => t.id === item.categoryId)?.name || "-"}
                         </td>
                         <td>{item.price} ج.م</td>
+                         <td>{item.coins} </td>
                         <td className="flex justify-center gap-3">
                           <button
                             className="text-blue-600 hover:text-blue-800"
@@ -372,6 +389,20 @@ const saveTest = async () => {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
                   ج.م
+                </span>
+              </div>
+            </div>
+             <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={form.coins}
+                  onChange={(e) => setForm({ ...form, coins: e.target.value })}
+                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-right"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                  coins
                 </span>
               </div>
             </div>

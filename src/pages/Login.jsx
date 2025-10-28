@@ -77,7 +77,7 @@ function Login() {
       localStorage.setItem("role", role);
       localStorage.setItem("user", JSON.stringify(data.resource));
 
-      toast.success("تم تسجيل الدخول بنجاح!");
+      // toast.success("تم تسجيل الدخول بنجاح!");
       setTimeout(() => navigate("/app"), 1500);
     } catch (err) {
       toast.error(err.message || " خطأ في تسجيل الدخول");
