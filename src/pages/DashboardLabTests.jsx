@@ -21,19 +21,22 @@ function DashboardLabTests() {
   const [showTestModal, setShowTestModal] = useState(false);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [editTest, setEditTest] = useState(null);
+  const [editType, setEditType] = useState(null);
   const [loading, setLoading] = useState(true);
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [form, setForm] = useState({
     name: "",
     price: "",
     type: "",
-    coins:"",
+    coins: "",
+    unionCoins: "",
     image: "",
     categoryId: "",
   });
 
   const [newType, setNewType] = useState("");
+  const [newTypeOrder, setNewTypeOrder] = useState("");
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 5;
@@ -80,73 +83,90 @@ const [searchTerm, setSearchTerm] = useState("");
       setForm({
         name: test.name,
         price: test.price,
+        coins: test.coins || "",
+        unionCoins: test.unionCoins || "",
         type: types.find((t) => t.id === test.categoryId)?.name || "",
         categoryId: test.categoryId,
-        image: "", // خلي image فاضي للـ base64
+        image: "",
       });
     } else {
       setEditTest(null);
-      setForm({ name: "", price: "", type: "", image: "", categoryId: "" });
+      setForm({ 
+        name: "", 
+        price: "", 
+        coins: "", 
+        unionCoins: "", 
+        type: "", 
+        image: "", 
+        categoryId: "" 
+      });
     }
     setShowTestModal(true);
   };
 
   const openTypeModal = () => {
     setNewType("");
+    setNewTypeOrder("");
+    setEditType(null);
     setShowTypeModal(true);
   };
 
-const saveTest = async () => {
-  if (!form.name || !form.price || !form.type) {
-    toast.error("من فضلك ادخل اسم التحليل والسعر والنوع");
-    return;
-  }
-
-  const selectedType = types.find((t) => t.name === form.type);
-  if (!selectedType) {
-    toast.error("النوع غير موجود");
-    return;
-  }
-
-  // ✅ فقط نرسل Base64 إذا المستخدم رفع صورة جديدة
-  const payload = {
-    name: form.name,
-    price: Number(form.price),
-      coins: Number(form.coins) || 0,
-    categoryId: selectedType.id,
-    orderRank: 0,
-    ...(form.image ? { imageBase64: form.image } : {}), // إذا الصورة موجودة
+  const openEditTypeModal = (type) => {
+    setEditType(type);
+    setNewType(type.name);
+    setNewTypeOrder(type.orderRank.toString());
   };
 
-  try {
-    const url = editTest
-      ? "https://apilab.runasp.net/api/MedicalLabs/Update"
-      : "https://apilab.runasp.net/api/MedicalLabs/Add";
-
-    const method = editTest ? "PUT" : "POST";
-
-    const bodyData = editTest ? { ...payload, id: editTest.id } : payload;
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyData),
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      toast.success(editTest ? "تم تعديل التحليل بنجاح" : "تمت إضافة التحليل بنجاح");
-      fetchData();
-      setShowTestModal(false);
-    } else {
-      toast.error(data.message || "حدث خطأ أثناء الحفظ");
+  const saveTest = async () => {
+    if (!form.name || !form.price || !form.type) {
+      toast.error("من فضلك ادخل اسم التحليل والسعر والنوع");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    toast.error("خطأ في الاتصال بالخادم");
-  }
-};
 
+    const selectedType = types.find((t) => t.name === form.type);
+    if (!selectedType) {
+      toast.error("النوع غير موجود");
+      return;
+    }
+
+    const payload = {
+      name: form.name,
+      price: Number(form.price),
+      coins: Number(form.coins) || 0,
+      unionCoins: Number(form.unionCoins) || 0,
+      categoryId: selectedType.id,
+      orderRank: 0,
+      ...(form.image ? { imageBase64: form.image } : {}),
+    };
+
+    try {
+      const url = editTest
+        ? "https://apilab.runasp.net/api/MedicalLabs/Update"
+        : "https://apilab.runasp.net/api/MedicalLabs/Add";
+
+      const method = editTest ? "PUT" : "POST";
+
+      const bodyData = editTest ? { ...payload, id: editTest.id } : payload;
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(editTest ? "تم تعديل التحليل بنجاح" : "تمت إضافة التحليل بنجاح");
+        fetchData();
+        setShowTestModal(false);
+      } else {
+        toast.error(data.message || "حدث خطأ أثناء الحفظ");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("خطأ في الاتصال بالخادم");
+    }
+  };
 
   const deleteTest = async (id) => {
     if (!window.confirm("هل أنت متأكد من حذف هذا التحليل؟")) return;
@@ -172,18 +192,65 @@ const saveTest = async () => {
       return;
     }
 
+    if (!newTypeOrder) {
+      toast.error("من فضلك أدخل رقم الترتيب");
+      return;
+    }
+
     try {
       const res = await fetch("https://apilab.runasp.net/api/Category/Add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newType, colorHexa: "#005FA1" }),
+        body: JSON.stringify({ 
+          name: newType, 
+          colorHexa: "#005FA1",
+          orderRank: Number(newTypeOrder) 
+        }),
       });
       const data = await res.json();
       if (data.success) {
         toast.success("تمت إضافة النوع بنجاح");
         setTypes((prev) => [...prev, data.resource]);
         setNewType("");
+        setNewTypeOrder("");
       } else toast.error(data.message || "حدث خطأ أثناء الإضافة");
+    } catch {
+      toast.error("خطأ في الاتصال بالخادم");
+    }
+  };
+
+  const updateType = async () => {
+    if (!newType.trim()) {
+      toast.error("من فضلك أدخل اسم النوع");
+      return;
+    }
+
+    if (!newTypeOrder) {
+      toast.error("من فضلك أدخل رقم الترتيب");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://apilab.runasp.net/api/Category/Update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          id: editType.id,
+          name: newType, 
+          colorHexa: editType.colorHexa || "#005FA1",
+          orderRank: Number(newTypeOrder) 
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("تم تعديل النوع بنجاح");
+        setTypes((prev) => prev.map(t => 
+          t.id === editType.id ? { ...t, name: newType, orderRank: Number(newTypeOrder) } : t
+        ));
+        setNewType("");
+        setNewTypeOrder("");
+        setEditType(null);
+      } else toast.error(data.message || "حدث خطأ أثناء التعديل");
     } catch {
       toast.error("خطأ في الاتصال بالخادم");
     }
@@ -207,12 +274,17 @@ const saveTest = async () => {
     }
   };
 
- const filteredTests = tests.filter((t) => {
-  const matchesType = filterType ? String(t.categoryId) === String(filterType) : true;
-  const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
-  return matchesType && matchesSearch;
-});
+  const cancelEditType = () => {
+    setEditType(null);
+    setNewType("");
+    setNewTypeOrder("");
+  };
 
+  const filteredTests = tests.filter((t) => {
+    const matchesType = filterType ? String(t.categoryId) === String(filterType) : true;
+    const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
   const totalPages = Math.ceil(filteredTests.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
@@ -226,48 +298,47 @@ const saveTest = async () => {
           <Loading />
         ) : (
           <>
-          <div className="flex justify-between items-center mb-6">
-  <button
-    className="flex justify-center items-center gap-2 p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a]"
-    onClick={() => openTestModal()}
-  >
-    <PlusCircleIcon className="w-6 h-6" />
-    إضافة تحليل جديد
-  </button>
+            <div className="flex justify-between items-center mb-6">
+              <button
+                className="flex justify-center items-center gap-2 p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a]"
+                onClick={() => openTestModal()}
+              >
+                <PlusCircleIcon className="w-6 h-6" />
+                إضافة تحليل جديد
+              </button>
 
-  <input
-    type="text"
-    placeholder="ابحث باسم التحليل..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="border-2 border-[#005FA1] rounded-lg py-2 px-3 w-64 text-right text-[#005FA1] outline-none focus:ring-0 focus:outline-none"
-  />
+              <input
+                type="text"
+                placeholder="ابحث باسم التحليل..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="border-2 border-[#005FA1] rounded-lg py-2 px-3 w-64 text-right text-[#005FA1] outline-none focus:ring-0 focus:outline-none"
+              />
 
-  <select
-    value={filterType}
-    onChange={(e) => {
-      setFilterType(e.target.value);
-      setPage(1);
-    }}
-    className=" text-[#005FA1] border-2 border-[#005FA1] rounded-lg py-2 px-3 outline-none focus:outline-none"
-  >
-    <option value="">جميع انواع التحاليل</option>
-    {types.map((t) => (
-      <option key={t.id} value={t.id}>
-        {t.name}
-      </option>
-    ))}
-  </select>
+              <select
+                value={filterType}
+                onChange={(e) => {
+                  setFilterType(e.target.value);
+                  setPage(1);
+                }}
+                className="text-[#005FA1] border-2 border-[#005FA1] rounded-lg py-2 px-3 outline-none focus:outline-none"
+              >
+                <option value="">جميع انواع التحاليل</option>
+                {types.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
 
-  <button
-    className="flex justify-center items-center gap-2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-800"
-    onClick={openTypeModal}
-  >
-    <TagIcon className="w-6 h-6" />
-    إدارة أنواع التحاليل
-  </button>
-</div>
-
+              <button
+                className="flex justify-center items-center gap-2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-800"
+                onClick={openTypeModal}
+              >
+                <TagIcon className="w-6 h-6" />
+                إدارة أنواع التحاليل
+              </button>
+            </div>
 
             <div className="overflow-x-auto">
               <table className="table table-zebra w-full text-center shadow-md rounded-lg">
@@ -279,6 +350,7 @@ const saveTest = async () => {
                     <th>النوع</th>
                     <th>السعر</th>
                     <th>كوينز</th>
+                    <th> كوينز النقابات</th>
                     <th>الإجراءات</th>
                   </tr>
                 </thead>
@@ -303,7 +375,8 @@ const saveTest = async () => {
                           {types.find((t) => t.id === item.categoryId)?.name || "-"}
                         </td>
                         <td>{item.price} ج.م</td>
-                         <td>{item.coins} </td>
+                        <td>{item.coins || 0}</td>
+                        <td>{item.unionCoins || 0}</td>
                         <td className="flex justify-center gap-3">
                           <button
                             className="text-blue-600 hover:text-blue-800"
@@ -322,7 +395,7 @@ const saveTest = async () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="text-center text-gray-500">
+                      <td colSpan="8" className="text-center text-gray-500">
                         لا توجد تحاليل مضافة بعد
                       </td>
                     </tr>
@@ -392,14 +465,15 @@ const saveTest = async () => {
                 </span>
               </div>
             </div>
-             <div className="mb-4">
+
+            <div className="mb-4">
               <div className="relative">
                 <input
                   type="number"
                   placeholder="0"
                   value={form.coins}
                   onChange={(e) => setForm({ ...form, coins: e.target.value })}
-                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-right"
+                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-left"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
                   coins
@@ -407,52 +481,64 @@ const saveTest = async () => {
               </div>
             </div>
 
-            {/* اختيار النوع */}
-           <CustomSelect
-  icon={<BeakerIcon className="w-6 h-6 text-[#005FA1]" />}
-  value={form.type}
-  onChange={(val) => {
-    const selected = types.find((t) => t.name === val);
-    setForm({
-      ...form,
-      type: val,
-      categoryId: selected ? selected.id : "",
-    });
-  }}
-  defaultValue="اختر النوع"
-  options={types.map((t) => t.name)}
-/>
+            <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={form.unionCoins}
+                  onChange={(e) => setForm({ ...form, unionCoins: e.target.value })}
+                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-left"
+                />
+                <span className="absolute right-3  top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                  النقابات</span>
+              </div>
+            </div>
 
+            {/* اختيار النوع */}
+            <CustomSelect
+              icon={<BeakerIcon className="w-6 h-6 text-[#005FA1]" />}
+              value={form.type}
+              onChange={(val) => {
+                const selected = types.find((t) => t.name === val);
+                setForm({
+                  ...form,
+                  type: val,
+                  categoryId: selected ? selected.id : "",
+                });
+              }}
+              defaultValue="اختر النوع"
+              options={types.map((t) => t.name)}
+            />
 
             {/* رفع صورة */}
-           <div className="mb-4">
-  <p className="text-[#005FA1] text-right">اختار صوره التحليل</p>
-  <input
-    type="file"
-    accept="image/*"
-    onChange={handleImageChange}
-    className="w-full mb-2"
-  />
+            <div className="mb-4">
+              <p className="text-[#005FA1] text-right">اختار صوره التحليل</p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full mb-2"
+              />
 
-  {/* عرض الصورة مع زر X إذا موجودة */}
-  {(form.image || (editTest && editTest.imageUrl)) && (
-    <div className="relative w-32 h-32 mx-auto">
-      <img
-        src={form.image ? `data:image/*;base64,${form.image}` : `https://apilab.runasp.net${editTest.imageUrl}`}
-        alt="preview"
-        className="w-full h-full object-cover rounded-lg"
-      />
-      <button
-        type="button"
-        onClick={() => setForm({ ...form, image: "" })}
-        className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-800"
-      >
-        <XMarkIcon className="w-4 h-4" />
-      </button>
-    </div>
-  )}
-</div>
-
+              {/* عرض الصورة مع زر X إذا موجودة */}
+              {(form.image || (editTest && editTest.imageUrl)) && (
+                <div className="relative w-32 h-32 mx-auto">
+                  <img
+                    src={form.image ? `data:image/*;base64,${form.image}` : `https://apilab.runasp.net${editTest.imageUrl}`}
+                    alt="preview"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, image: "" })}
+                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-800"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* الأزرار */}
             <div className="flex justify-end gap-3 mt-6">
@@ -471,50 +557,95 @@ const saveTest = async () => {
       {/* ✅ مودال الأنواع */}
       {showTypeModal && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-[400px] relative">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-[500px] relative">
             <h1 className="text-2xl font-bold text-green-700 mb-4 text-right">
-              أنواع التحاليل
+              {editType ? "تعديل النوع" : "إدارة أنواع التحاليل"}
             </h1>
 
-            {/* إضافة نوع جديد */}
-            <div className="flex flex-row-reverse gap-2 mb-4">
+            {/* إضافة/تعديل نوع جديد */}
+            <div className="flex flex-col gap-3 mb-4">
               <input
                 type="text"
-                placeholder="نوع جديد"
+                placeholder="اسم النوع"
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="flex-1 bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
+                className="w-full bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
               />
-              <button
-                className="text-white bg-[#005FA1] px-3 py-2 rounded-lg"
-                onClick={addType}
-              >
-                إضافة
-              </button>
+              <input
+                type="number"
+                placeholder="رقم الترتيب"
+                value={newTypeOrder}
+                onChange={(e) => setNewTypeOrder(e.target.value)}
+                className="w-full bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
+              />
+              <div className="flex gap-2">
+                {editType ? (
+                  <>
+                    <button
+                      className="flex-1 text-white bg-green-600 px-3 py-2 rounded-lg hover:bg-green-700"
+                      onClick={updateType}
+                    >
+                      تعديل النوع
+                    </button>
+                    <button
+                      className="flex-1 text-white bg-gray-500 px-3 py-2 rounded-lg hover:bg-gray-600"
+                      onClick={cancelEditType}
+                    >
+                      إلغاء
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="w-full text-white bg-[#005FA1] px-3 py-2 rounded-lg hover:bg-[#00457a]"
+                    onClick={addType}
+                  >
+                    إضافة النوع
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* قائمة الأنواع */}
-            <ul className="max-h-60 overflow-y-auto">
-              {types.map((t, idx) => (
-                <li
-                  key={idx}
-                  className="flex justify-between items-center p-2 border-b"
-                >
-                  <span>{t.name}</span>
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => deleteType(t)}
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="max-h-60 overflow-y-auto">
+              <table className="w-full text-right">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2">الاسم</th>
+                    <th className="p-2">رقم الترتيب</th>
+                    <th className="p-2">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {types.map((t) => (
+                    <tr key={t.id} className="border-b">
+                      <td className="p-2">{t.name}</td>
+                      <td className="p-2">{t.orderRank}</td>
+                      <td className="p-2">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            className="text-blue-600 hover:text-blue-800"
+                            onClick={() => openEditTypeModal(t)}
+                          >
+                            <PencilSquareIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-800"
+                            onClick={() => deleteType(t)}
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* الأزرار */}
             <div className="flex justify-end gap-3 mt-6">
               <button
-                className="px-3 py-2 bg-gray-300 rounded-lg"
+                className="px-3 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
                 onClick={() => setShowTypeModal(false)}
               >
                 إغلاق

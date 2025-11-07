@@ -21,6 +21,7 @@ import Confirmpassword from "./pages/Confirmpassword";
 import Dashboardunion from "./pages/Dashboardunion";
 import DashboardLabTests from "./pages/DashboardLabTests";
 import Addads from "./pages/Addads";
+
 function App() {
   return (
     <BrowserRouter>
@@ -49,6 +50,9 @@ function App() {
             <Route path="labtests" element={<DashboardLabTests/>} />
             <Route path="unions" element={<Dashboardunion/>} />
             <Route path="ads" element={<Addads/>} />
+            {/* <Route path="qq" element={<QuickLabUpload/>}/> */}
+            
+           
 
           </Route>
            {/* <Route path="addads" element={<Addads/>} />
