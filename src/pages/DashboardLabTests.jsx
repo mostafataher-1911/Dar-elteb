@@ -293,73 +293,81 @@ function DashboardLabTests() {
   return (
     <>
       <Toaster position="top-center" />
-      <div className="p-6 h-screen">
+      <div className="p-4 sm:p-6 min-h-screen">
         {loading ? (
           <Loading />
         ) : (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <button
-                className="flex justify-center items-center gap-2 p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a]"
-                onClick={() => openTestModal()}
-              >
-                <PlusCircleIcon className="w-6 h-6" />
-                إضافة تحليل جديد
-              </button>
+            {/* شريط التحكم - تصميم متجاوب */}
+            <div className="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
+              {/* الأزرار */}
+              <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                <button
+                  className="flex justify-center items-center gap-2 w-full sm:w-auto p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a] text-sm sm:text-base"
+                  onClick={() => openTestModal()}
+                >
+                  <PlusCircleIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  إضافة تحليل جديد
+                </button>
 
-              <input
-                type="text"
-                placeholder="ابحث باسم التحليل..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-2 border-[#005FA1] rounded-lg py-2 px-3 w-64 text-right text-[#005FA1] outline-none focus:ring-0 focus:outline-none"
-              />
+                <button
+                  className="flex justify-center items-center gap-2 w-full sm:w-auto p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-800 text-sm sm:text-base"
+                  onClick={openTypeModal}
+                >
+                  <TagIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  إدارة أنواع التحاليل
+                </button>
+              </div>
 
-              <select
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  setPage(1);
-                }}
-                className="text-[#005FA1] border-2 border-[#005FA1] rounded-lg py-2 px-3 outline-none focus:outline-none"
-              >
-                <option value="">جميع انواع التحاليل</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+              {/* البحث والفلتر */}
+              <div className="flex flex-col sm:flex-row gap-4 w-full lg:flex-1 lg:justify-end">
+                <input
+                  type="text"
+                  placeholder="ابحث باسم التحليل..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="border-2 border-[#005FA1] rounded-lg py-2 px-3 w-full sm:w-64 text-right text-[#005FA1] outline-none focus:ring-0 focus:outline-none"
+                />
 
-              <button
-                className="flex justify-center items-center gap-2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-800"
-                onClick={openTypeModal}
-              >
-                <TagIcon className="w-6 h-6" />
-                إدارة أنواع التحاليل
-              </button>
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value);
+                    setPage(1);
+                  }}
+                  className="text-[#005FA1] border-2 border-[#005FA1] rounded-lg py-2 px-3 w-full sm:w-64 outline-none focus:outline-none"
+                >
+                  <option value="">جميع انواع التحاليل</option>
+                  {types.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="table table-zebra w-full text-center shadow-md rounded-lg">
+            {/* الجدول - يبقى كما هو */}
+            <div className="overflow-x-auto bg-white rounded-lg shadow-md">
+              <table className="table table-zebra w-full text-center">
                 <thead className="bg-[#005FA1] text-white">
                   <tr>
-                    <th>#</th>
-                    <th>الصورة</th>
-                    <th>اسم التحليل</th>
-                    <th>النوع</th>
-                    <th>السعر</th>
-                    <th>كوينز</th>
-                    <th> كوينز النقابات</th>
-                    <th>الإجراءات</th>
+                    <th className="p-3">#</th>
+                    <th className="p-3">الصورة</th>
+                    <th className="p-3">اسم التحليل</th>
+                    <th className="p-3">النوع</th>
+                    <th className="p-3">السعر</th>
+                    <th className="p-3">كوينز</th>
+                    <th className="p-3"> كوينز النقابات</th>
+                    <th className="p-3">الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedTests.length > 0 ? (
                     paginatedTests.map((item, index) => (
-                      <tr key={item.id}>
-                        <td>{startIndex + index + 1}</td>
-                        <td>
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="p-3">{startIndex + index + 1}</td>
+                        <td className="p-3">
                           {item.imageUrl ? (
                             <img
                               src={`https://apilab.runasp.net${item.imageUrl}`}
@@ -370,32 +378,34 @@ function DashboardLabTests() {
                             <span className="text-gray-400">لا توجد صورة</span>
                           )}
                         </td>
-                        <td>{item.name}</td>
-                        <td>
+                        <td className="p-3">{item.name}</td>
+                        <td className="p-3">
                           {types.find((t) => t.id === item.categoryId)?.name || "-"}
                         </td>
-                        <td>{item.price} ج.م</td>
-                        <td>{item.coins || 0}</td>
-                        <td>{item.unionCoins || 0}</td>
-                        <td className="flex justify-center gap-3">
-                          <button
-                            className="text-blue-600 hover:text-blue-800"
-                            onClick={() => openTestModal(item)}
-                          >
-                            <PencilSquareIcon className="w-5 h-5" />
-                          </button>
-                          <button
-                            className="text-red-600 hover:text-red-800"
-                            onClick={() => deleteTest(item.id)}
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
+                        <td className="p-3">{item.price} ج.م</td>
+                        <td className="p-3">{item.coins || 0}</td>
+                        <td className="p-3">{item.unionCoins || 0}</td>
+                        <td className="p-3">
+                          <div className="flex justify-center gap-3">
+                            <button
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              onClick={() => openTestModal(item)}
+                            >
+                              <PencilSquareIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                              className="text-red-600 hover:text-red-800 transition-colors"
+                              onClick={() => deleteTest(item.id)}
+                            >
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="text-center text-gray-500">
+                      <td colSpan="8" className="p-4 text-center text-gray-500">
                         لا توجد تحاليل مضافة بعد
                       </td>
                     </tr>
@@ -404,19 +414,20 @@ function DashboardLabTests() {
               </table>
             </div>
 
+            {/* Pagination - يبقى كما هو */}
             {filteredTests.length > 0 && (
               <>
                 <div className="flex justify-center mt-6">
                   <div className="join">
                     <button
-                      className="join-item btn bg-[#005FA1] text-white"
+                      className="join-item btn bg-[#005FA1] text-white px-4 py-2"
                       disabled={page === 1}
                       onClick={() => setPage((p) => p - 1)}
                     >
                       الصفحة السابقة
                     </button>
                     <button
-                      className="join-item btn bg-[#005FA1] text-white"
+                      className="join-item btn bg-[#005FA1] text-white px-4 py-2"
                       disabled={page === totalPages}
                       onClick={() => setPage((p) => p + 1)}
                     >
@@ -434,116 +445,117 @@ function DashboardLabTests() {
         )}
       </div>
 
-      {/* ✅ مودال التحليل */}
+      {/* مودال التحليل - تصميم متجاوب */}
       {showTestModal && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-[400px] relative">
-            <h1 className="text-2xl font-bold text-[#005FA1] mb-4 text-right">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#005FA1] mb-4 text-right">
               {editTest ? "تعديل التحليل" : "إضافة تحليل جديد"}
             </h1>
 
-            <div className="mb-4">
+            <div className="space-y-4">
               <CustomInputicon
-                icon={<BeakerIcon />}
+                icon={<BeakerIcon className="w-5 h-5" />}
                 placeholder="اسم التحليل"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
-            </div>
 
-            <div className="mb-4">
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-right"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
-                  ج.م
-                </span>
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                    ج.م
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="mb-4">
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.coins}
-                  onChange={(e) => setForm({ ...form, coins: e.target.value })}
-                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-left"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
-                  coins
-                </span>
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.coins}
+                    onChange={(e) => setForm({ ...form, coins: e.target.value })}
+                    className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-left"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                    coins
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="mb-4">
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.unionCoins}
-                  onChange={(e) => setForm({ ...form, unionCoins: e.target.value })}
-                  className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-left"
-                />
-                <span className="absolute right-3  top-1/2 -translate-y-1/2 text-gray-600 font-medium">
-                  النقابات</span>
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.unionCoins}
+                    onChange={(e) => setForm({ ...form, unionCoins: e.target.value })}
+                    className="w-full bg-gray-200 rounded-lg py-2 pr-14 pl-3 outline-none text-left"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                    النقابات
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* اختيار النوع */}
-            <CustomSelect
-              icon={<BeakerIcon className="w-6 h-6 text-[#005FA1]" />}
-              value={form.type}
-              onChange={(val) => {
-                const selected = types.find((t) => t.name === val);
-                setForm({
-                  ...form,
-                  type: val,
-                  categoryId: selected ? selected.id : "",
-                });
-              }}
-              defaultValue="اختر النوع"
-              options={types.map((t) => t.name)}
-            />
-
-            {/* رفع صورة */}
-            <div className="mb-4">
-              <p className="text-[#005FA1] text-right">اختار صوره التحليل</p>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full mb-2"
+              {/* اختيار النوع */}
+              <CustomSelect
+                icon={<BeakerIcon className="w-5 h-5 text-[#005FA1]" />}
+                value={form.type}
+                onChange={(val) => {
+                  const selected = types.find((t) => t.name === val);
+                  setForm({
+                    ...form,
+                    type: val,
+                    categoryId: selected ? selected.id : "",
+                  });
+                }}
+                defaultValue="اختر النوع"
+                options={types.map((t) => t.name)}
               />
 
-              {/* عرض الصورة مع زر X إذا موجودة */}
-              {(form.image || (editTest && editTest.imageUrl)) && (
-                <div className="relative w-32 h-32 mx-auto">
-                  <img
-                    src={form.image ? `data:image/*;base64,${form.image}` : `https://apilab.runasp.net${editTest.imageUrl}`}
-                    alt="preview"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, image: "" })}
-                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-800"
-                  >
-                    <XMarkIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
+              {/* رفع صورة */}
+              <div className="mb-4">
+                <p className="text-[#005FA1] text-right">اختار صوره التحليل</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full mb-2"
+                />
+
+                {/* عرض الصورة مع زر X إذا موجودة */}
+                {(form.image || (editTest && editTest.imageUrl)) && (
+                  <div className="relative w-32 h-32 mx-auto">
+                    <img
+                      src={form.image ? `data:image/*;base64,${form.image}` : `https://apilab.runasp.net${editTest.imageUrl}`}
+                      alt="preview"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, image: "" })}
+                      className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 hover:bg-red-800"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* الأزرار */}
             <div className="flex justify-end gap-3 mt-6">
               <button
-                className="px-3 py-2 bg-gray-300 rounded-lg"
+                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition-colors"
                 onClick={() => setShowTestModal(false)}
               >
                 إلغاء
@@ -554,29 +566,29 @@ function DashboardLabTests() {
         </div>
       )}
 
-      {/* ✅ مودال الأنواع */}
+      {/* مودال الأنواع - تصميم متجاوب */}
       {showTypeModal && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-[500px] relative">
-            <h1 className="text-2xl font-bold text-green-700 mb-4 text-right">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h1 className="text-xl sm:text-2xl font-bold text-green-700 mb-4 text-right">
               {editType ? "تعديل النوع" : "إدارة أنواع التحاليل"}
             </h1>
 
             {/* إضافة/تعديل نوع جديد */}
-            <div className="flex flex-col gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <input
                 type="text"
                 placeholder="اسم النوع"
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="w-full bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
+                className="flex-1 bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
               />
               <input
                 type="number"
                 placeholder="رقم الترتيب"
                 value={newTypeOrder}
                 onChange={(e) => setNewTypeOrder(e.target.value)}
-                className="w-full bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
+                className="w-full sm:w-32 bg-gray-200 rounded-lg py-2 px-3 outline-none text-right"
               />
               <div className="flex gap-2">
                 {editType ? (
@@ -617,19 +629,19 @@ function DashboardLabTests() {
                 </thead>
                 <tbody>
                   {types.map((t) => (
-                    <tr key={t.id} className="border-b">
+                    <tr key={t.id} className="border-b hover:bg-gray-50">
                       <td className="p-2">{t.name}</td>
                       <td className="p-2">{t.orderRank}</td>
                       <td className="p-2">
                         <div className="flex justify-center gap-2">
                           <button
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
                             onClick={() => openEditTypeModal(t)}
                           >
                             <PencilSquareIcon className="w-4 h-4" />
                           </button>
                           <button
-                            className="text-red-600 hover:text-red-800"
+                            className="text-red-600 hover:text-red-800 transition-colors"
                             onClick={() => deleteType(t)}
                           >
                             <TrashIcon className="w-4 h-4" />
@@ -645,7 +657,7 @@ function DashboardLabTests() {
             {/* الأزرار */}
             <div className="flex justify-end gap-3 mt-6">
               <button
-                className="px-3 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition-colors"
                 onClick={() => setShowTypeModal(false)}
               >
                 إغلاق

@@ -15,7 +15,7 @@ function CustomSelect({ options = [], icon, defaultValue = "Pick a value", value
   };
 
   return (
-    <div className="relative w-full max-w-[353px]">
+    <div className="relative w-full">
       {/* container */}
       <div
         onClick={() => setIsOpen(!isOpen)}
@@ -61,7 +61,7 @@ function CustomSelect({ options = [], icon, defaultValue = "Pick a value", value
 
       {/* options */}
       {isOpen && (
-        <ul className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+        <ul className="absolute mt-2  bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 ">
           {options.map((option, index) => (
             <li
               key={index}
