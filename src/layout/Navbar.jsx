@@ -29,7 +29,7 @@ function Navbar() {
     ? [
         { to: "users", label: "جميع العملاء", icon: <UsersIcon className="w-5 h-5" /> },
         { to: "labtests", label: "اضافة التحليل", icon: <BeakerIcon className="w-5 h-5" /> },
-        { to: "notifications", label: "الإشعارات", icon: <BellIcon className="w-5 h-5" /> },
+        
       ]
     : [
         { to: "labtests", label: "اضافة التحليل", icon: <BeakerIcon className="w-5 h-5" /> },

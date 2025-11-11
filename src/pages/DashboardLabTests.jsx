@@ -368,7 +368,7 @@ function DashboardLabTests() {
                     <th className="p-3">كوينز</th>
                     <th className="p-3"> كوينز النقابات</th>
                     <th className="p-3">نقابة المعلمين</th>
-                    <th className="p-3">باقي النقابات</th>
+                    <th className="p-3">المحامين والمحكمه والاثار </th>
                     <th className="p-3">الإجراءات</th>
                   </tr>
                 </thead>
