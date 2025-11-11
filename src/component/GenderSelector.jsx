@@ -15,9 +15,9 @@ export default function GenderSelector({ onChange }) {
         <input
           type="radio"
           name="gender"
-          value="female"
-          checked={gender === "female"}
-          onChange={() => handleChange("female")}
+          value="انثي"
+          checked={gender === "انثي"}
+          onChange={() => handleChange("انثي")}
           className="hidden peer"
         />
         <div
@@ -38,9 +38,9 @@ export default function GenderSelector({ onChange }) {
         <input
           type="radio"
           name="gender"
-          value="male"
-          checked={gender === "male"}
-          onChange={() => handleChange("male")}
+          value="ذكر"
+          checked={gender === "ذكر"}
+          onChange={() => handleChange("ذكر")}
           className="hidden peer"
         />
         <div

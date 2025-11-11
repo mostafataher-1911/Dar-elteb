@@ -21,6 +21,7 @@ function Dashboard() {
   const [data, setData] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [filterUnion, setFilterUnion] = useState("");
   const [unions, setUnions] = useState([]);
@@ -70,7 +71,7 @@ function Dashboard() {
           id: c.id,
           name: c.name,
           phone: c.phone,
-          gender: "ذكر",
+          gender: c.gender || "ذكر",
           coins: c.bonus,
           union: c.address || "غير محدد",
         }));
@@ -118,47 +119,69 @@ function Dashboard() {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const openModal = (user = null) => {
+    console.log("📝 فتح مودال للمستخدم:", user);
+    
     if (user) {
       setEditUser(user);
       setForm({
         name: user.name,
         phone: user.phone,
-        gender: user.gender,
+        gender: user.gender, // ✅ سيتم عرض القيمة الصحيحة
         coins: user.coins,
         union: user.union,
       });
+      console.log("🎯 بيانات النموذج - الجندر:", user.gender);
     } else {
       setEditUser(null);
-      setForm({ name: "", phone: "", gender: "", coins: "", union: "" });
+      setForm({ 
+        name: "", 
+        phone: "", 
+        gender: "ذكر", // ✅ قيمة افتراضية
+        coins: "", 
+        union: "" 
+      });
     }
     setShowModal(true);
   };
 
   const saveUser = async () => {
+    if (saving) {
+      return;
+    }
+
     if (!form.name || !form.phone) {
       toast.error("من فضلك ادخل الاسم ورقم المحمول");
       return;
     }
+    
     if (!/^\d{10}$/.test(form.phone)) {
       toast.error("رقم المحمول يجب أن يحتوي على 10 أرقام فقط");
       return;
     }
+
+    // ✅ التحقق من وجود الرقم
     const phoneExists = data.some(
       (item) =>
         item.phone === form.phone && (!editUser || item.id !== editUser.id)
     );
+    
     if (phoneExists) {
       toast.error("هذا الرقم مسجل بالفعل ❌");
       return;
     }
 
+    setSaving(true);
+
     const payload = {
       name: form.name,
       phone: form.phone,
+      gender: form.gender || "ذكر",
       address: form.union,
       bonus: Number(form.coins) || 0,
       id: editUser?.id || undefined,
     };
+
+    console.log("📤 إرسال البيانات:", payload);
 
     try {
       let res;
@@ -175,17 +198,25 @@ function Dashboard() {
           body: JSON.stringify(payload),
         });
       }
+      
       const result = await res.json();
+      
       if (result.success) {
-        toast.success("تم الحفظ بنجاح ✅");
+        toast.success(editUser ? "تم التعديل بنجاح ✅" : "تمت الإضافة بنجاح ✅");
         fetchClients();
         setShowModal(false);
       } else {
-        toast.error("حدث خطأ أثناء الحفظ ❌");
+        if (result.message && result.message.includes("مسجل")) {
+          toast.error("هذا الرقم مسجل بالفعل ❌");
+        } else {
+          toast.error(result.message || "حدث خطأ أثناء الحفظ ❌");
+        }
       }
     } catch (err) {
       console.error("Error saving user:", err);
       toast.error("حدث خطأ في الاتصال بالسيرفر ❌");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -216,70 +247,69 @@ function Dashboard() {
   };
 
   // إضافة كوينز للمستخدم
-const addCoinsToUser = async () => {
-  const user = data.find((u) => u.phone === coinsForm.phone);
-  if (!user) {
-    toast.error("رقم المحمول غير موجود ❌");
-    return;
-  }
-
-  let totalCoins = 0;
-  coinsForm.selectedLabs.forEach((lab) => {
-    const foundLab = labsData.find((l) => l.name === lab.name);
-    if (foundLab) {
-      totalCoins += (foundLab.price * (lab.discount || 0)) / 100;
+  const addCoinsToUser = async () => {
+    const user = data.find((u) => u.phone === coinsForm.phone);
+    if (!user) {
+      toast.error("رقم المحمول غير موجود ❌");
+      return;
     }
-  });
 
-  // تحديث البيانات محليًا
-  const updatedData = data.map((u) =>
-    u.phone === user.phone ? { ...u, coins: u.coins + totalCoins } : u
-  );
-  setData(updatedData);
-
-  // تجهيز البيانات حسب API
-  const payload = {
-    phone: user.phone,
-    coins: user.coins + totalCoins, // القيمة الجديدة بعد الإضافة
-  };
-
-  console.log("📤 إرسال بيانات التحديث:", payload);
-
-  try {
-    const res = await fetch(`https://apilab.runasp.net/api/Client/UpdateCoins`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    let totalCoins = 0;
+    coinsForm.selectedLabs.forEach((lab) => {
+      const foundLab = labsData.find((l) => l.name === lab.name);
+      if (foundLab) {
+        totalCoins += (foundLab.price * (lab.discount || 0)) / 100;
+      }
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
+    // تحديث البيانات محليًا
+    const updatedData = data.map((u) =>
+      u.phone === user.phone ? { ...u, coins: u.coins + totalCoins } : u
+    );
+    setData(updatedData);
 
-    const result = await res.json();
-    console.log("📥 نتيجة التحديث:", result);
+    // تجهيز البيانات حسب API
+    const payload = {
+      phone: user.phone,
+      coins: user.coins + totalCoins,
+    };
 
-    if (result.success || res.status === 200) {
-      toast.success(`تم إضافة ${totalCoins} كوينز للمستخدم ✅`);
-      setShowCoinsModal(false);
-      fetchClients(filterUnion);
-    } else {
-      toast.error("حدث خطأ أثناء إضافة الكوينز ❌");
+    console.log("📤 إرسال بيانات التحديث:", payload);
+
+    try {
+      const res = await fetch(`https://apilab.runasp.net/api/Client/UpdateCoins`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const result = await res.json();
+      console.log("📥 نتيجة التحديث:", result);
+
+      if (result.success || res.status === 200) {
+        toast.success(`تم إضافة ${totalCoins} كوينز للمستخدم ✅`);
+        setShowCoinsModal(false);
+        fetchClients(filterUnion);
+      } else {
+        toast.error("حدث خطأ أثناء إضافة الكوينز ❌");
+      }
+    } catch (err) {
+      console.error("Error updating coins:", err);
+      toast.error("حدث خطأ في الاتصال بالسيرفر ❌");
     }
-  } catch (err) {
-    console.error("Error updating coins:", err);
-    toast.error("حدث خطأ في الاتصال بالسيرفر ❌");
-  }
-};
+  };
 
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
 
       <div className="p-4 sm:p-6 min-h-screen">
-        {/* البحث والفلتر والأزرار - تصميم متجاوب بدون تغيير الشكل */}
+        {/* البحث والفلتر والأزرار */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
-          {/* الأزرار - تبقى كما هي */}
           <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
             <button
               className="flex justify-center items-center gap-2 w-full sm:w-auto p-2 bg-[#005FA1] text-white rounded-lg shadow-md hover:bg-[#00457a] text-sm sm:text-base"
@@ -298,7 +328,6 @@ const addCoinsToUser = async () => {
             </button>
           </div>
 
-          {/* البحث - يبقى كما هو */}
           <div className="w-full lg:flex-1 lg:max-w-md">
             <CustomInputicon
               type="number"
@@ -311,7 +340,6 @@ const addCoinsToUser = async () => {
             />
           </div>
 
-          {/* فلتر النقابة - يبقى كما هو */}
           <div className="w-full lg:w-auto">
             <select
               className="p-2 border-2 outline-0 border-[#005FA1] text-[#005FA1] rounded-lg shadow-sm w-full lg:w-48"
@@ -333,7 +361,7 @@ const addCoinsToUser = async () => {
           </div>
         </div>
 
-        {/* الجدول - يبقى كما هو بدون تغيير */}
+        {/* الجدول */}
         {loading ? (
           <Loading />
         ) : (
@@ -390,7 +418,6 @@ const addCoinsToUser = async () => {
               </table>
             </div>
 
-            {/* Pagination - يبقى كما هو */}
             {filteredData.length > 0 && (
               <>
                 <div className="flex justify-center mt-6">
@@ -421,92 +448,132 @@ const addCoinsToUser = async () => {
         )}
       </div>
 
-      {/* مودال إضافة مستخدم - يبقى كما هو */}
-     {/* مودال إضافة مستخدم - تم تعديل عرض الـ Inputs */}
-{showModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
-    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-      <h1 className="text-2xl font-bold text-[#005FA1] mb-4 text-right">
-        {editUser ? "تعديل الحساب" : "إضافة حساب جديد"}
-      </h1>
+      {/* مودال إضافة مستخدم */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h1 className="text-2xl font-bold text-[#005FA1] mb-4 text-right">
+              {editUser ? "تعديل الحساب" : "إضافة حساب جديد"}
+            </h1>
 
-      <div className="space-y-4">
-        {/* اسم المستخدم */}
-        <div className="w-full">
-          <CustomInputicon
-            icon={<UserIcon className="w-5 h-5" />}
-            placeholder="اسم المستخدم"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full"
-          />
+            <div className="space-y-4">
+              {/* اسم المستخدم */}
+              <div className="w-full">
+                <CustomInputicon
+                  icon={<UserIcon className="w-5 h-5" />}
+                  placeholder="اسم المستخدم"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+
+              {/* النوع - تصميم مخصص */}
+              <div className="w-full">
+                <label className="block text-right text-gray-700 mb-2">النوع</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all duration-200 font-medium ${
+                      form.gender === "ذكر"
+                        ? "bg-blue-500 text-white border-blue-500 shadow-md"
+                        : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setForm({ ...form, gender: "ذكر" })}
+                  >
+                    ذكر
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all duration-200 font-medium ${
+                      form.gender === "أنثى"
+                        ? "bg-pink-500 text-white border-pink-500 shadow-md"
+                        : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setForm({ ...form, gender: "أنثى" })}
+                  >
+                    أنثى
+                  </button>
+                </div>
+                {/* عرض القيمة الحالية للتأكد */}
+                <p className="text-xs text-gray-500 text-right mt-1">
+                  القيمة المحددة: {form.gender || "لم يتم التحديد"}
+                </p>
+              </div>
+
+              {/* رقم المحمول */}
+              <div className="w-full">
+                <CustomInputicon
+                  icon={<PhoneIcon className="w-5 h-5" />}
+                  type="text"
+                  placeholder="رقم المحمول"
+                  value={form.phone}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*$/.test(value) && value.length <= 10) {
+                      setForm({ ...form, phone: value });
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
+
+              {/* عدد الكوينز */}
+              <div className="w-full">
+                <CustomInputicon
+                  icon={<BanknotesIcon className="w-5 h-5" />}
+                  type="number"
+                  placeholder="عدد الكوينز"
+                  value={form.coins}
+                  onChange={(e) => setForm({ ...form, coins: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+
+              {/* اختيار النقابة */}
+              <div className="w-full">
+                <CustomSelect
+                  icon={<BuildingLibraryIcon className="w-5 h-5" />}
+                  value={form.union}
+                  onChange={(val) => setForm({ ...form, union: val })}
+                  defaultValue="اختر النقابة"
+                  options={unions.map((u) => u.name)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition-colors"
+                onClick={() => setShowModal(false)}
+                disabled={saving}
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={saveUser}
+                disabled={saving}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  saving 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-[#005FA1] hover:bg-[#00457a] text-white'
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  'حفظ'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* النوع */}
-        <div className="w-full">
-          <GenderSelector
-            value={form.gender}
-            onChange={(val) => setForm({ ...form, gender: val })}
-            className="w-full"
-          />
-        </div>
-
-        {/* رقم المحمول */}
-        <div className="w-full">
-          <CustomInputicon
-            icon={<PhoneIcon className="w-5 h-5" />}
-            type="text"
-            placeholder="رقم المحمول"
-            value={form.phone}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*$/.test(value) && value.length <= 10) {
-                setForm({ ...form, phone: value });
-              }
-            }}
-            className="w-full"
-          />
-        </div>
-
-        {/* عدد الكوينز */}
-        <div className="w-full">
-          <CustomInputicon
-            icon={<BanknotesIcon className="w-5 h-5" />}
-            type="number"
-            placeholder="عدد الكوينز"
-            value={form.coins}
-            onChange={(e) => setForm({ ...form, coins: e.target.value })}
-            className="w-full"
-          />
-        </div>
-
-        {/* اختيار النقابة */}
-        <div className="w-full">
-          <CustomSelect
-            icon={<BuildingLibraryIcon className="w-5 h-5" />}
-            value={form.union}
-            onChange={(val) => setForm({ ...form, union: val })}
-            defaultValue="اختر النقابة"
-            options={unions.map((u) => u.name)}
-            // className="w-full"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3 mt-6">
-        <button
-          className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition-colors"
-          onClick={() => setShowModal(false)}
-        >
-          إلغاء
-        </button>
-        <CustomButton text="حفظ" onClick={saveUser} />
-      </div>
-    </div>
-  </div>
-)}
-
-      {/* مودال إضافة كوينز - يبقى كما هو */}
+      {/* مودال إضافة كوينز */}
       {showCoinsModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">

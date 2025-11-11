@@ -31,6 +31,8 @@ function DashboardLabTests() {
     type: "",
     coins: "",
     unionCoins: "",
+    firstUnionCoins: "",
+    lastUnionCoins: "",
     image: "",
     categoryId: "",
   });
@@ -85,6 +87,8 @@ function DashboardLabTests() {
         price: test.price,
         coins: test.coins || "",
         unionCoins: test.unionCoins || "",
+        firstUnionCoins: test.firstUnionCoins || "",
+        lastUnionCoins: test.lastUnionCoins || "",
         type: types.find((t) => t.id === test.categoryId)?.name || "",
         categoryId: test.categoryId,
         image: "",
@@ -96,6 +100,8 @@ function DashboardLabTests() {
         price: "", 
         coins: "", 
         unionCoins: "", 
+        firstUnionCoins: "",
+        lastUnionCoins: "",
         type: "", 
         image: "", 
         categoryId: "" 
@@ -134,6 +140,8 @@ function DashboardLabTests() {
       price: Number(form.price),
       coins: Number(form.coins) || 0,
       unionCoins: Number(form.unionCoins) || 0,
+      firstUnionCoins: Number(form.firstUnionCoins) || 0,
+      lastUnionCoins: Number(form.lastUnionCoins) || 0,
       categoryId: selectedType.id,
       orderRank: 0,
       ...(form.image ? { imageBase64: form.image } : {}),
@@ -347,7 +355,7 @@ function DashboardLabTests() {
               </div>
             </div>
 
-            {/* الجدول - يبقى كما هو */}
+            {/* الجدول - تم تحديثه لإظهار الحقلين الجديدين */}
             <div className="overflow-x-auto bg-white rounded-lg shadow-md">
               <table className="table table-zebra w-full text-center">
                 <thead className="bg-[#005FA1] text-white">
@@ -359,6 +367,8 @@ function DashboardLabTests() {
                     <th className="p-3">السعر</th>
                     <th className="p-3">كوينز</th>
                     <th className="p-3"> كوينز النقابات</th>
+                    <th className="p-3">نقابة المعلمين</th>
+                    <th className="p-3">باقي النقابات</th>
                     <th className="p-3">الإجراءات</th>
                   </tr>
                 </thead>
@@ -385,6 +395,8 @@ function DashboardLabTests() {
                         <td className="p-3">{item.price} ج.م</td>
                         <td className="p-3">{item.coins || 0}</td>
                         <td className="p-3">{item.unionCoins || 0}</td>
+                        <td className="p-3">{item.firstUnionCoins || 0}</td>
+                        <td className="p-3">{item.lastUnionCoins || 0}</td>
                         <td className="p-3">
                           <div className="flex justify-center gap-3">
                             <button
@@ -405,7 +417,7 @@ function DashboardLabTests() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="p-4 text-center text-gray-500">
+                      <td colSpan="10" className="p-4 text-center text-gray-500">
                         لا توجد تحاليل مضافة بعد
                       </td>
                     </tr>
@@ -414,7 +426,7 @@ function DashboardLabTests() {
               </table>
             </div>
 
-            {/* Pagination - يبقى كما هو */}
+            {/* Pagination */}
             {filteredTests.length > 0 && (
               <>
                 <div className="flex justify-center mt-6">
@@ -445,7 +457,7 @@ function DashboardLabTests() {
         )}
       </div>
 
-      {/* مودال التحليل - تصميم متجاوب */}
+      {/* مودال التحليل - تم تحديثه لإضافة الحقلين الجديدين */}
       {showTestModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -502,6 +514,38 @@ function DashboardLabTests() {
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
                     النقابات
+                  </span>
+                </div>
+              </div>
+
+              {/* الحقل الجديد: نقابة المعلمين */}
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.firstUnionCoins}
+                    onChange={(e) => setForm({ ...form, firstUnionCoins: e.target.value })}
+                    className="w-full bg-gray-200 rounded-lg py-2 pr-32 pl-3 outline-none text-left"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                    نقابة المعلمين
+                  </span>
+                </div>
+              </div>
+
+              {/* الحقل الجديد: باقي النقابات */}
+              <div className="mb-4">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.lastUnionCoins}
+                    onChange={(e) => setForm({ ...form, lastUnionCoins: e.target.value })}
+                    className="w-full bg-gray-200 rounded-lg py-2 pr-32 pl-3 outline-none text-left"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+                    باقي النقابات
                   </span>
                 </div>
               </div>
@@ -566,7 +610,7 @@ function DashboardLabTests() {
         </div>
       )}
 
-      {/* مودال الأنواع - تصميم متجاوب */}
+      {/* مودال الأنواع */}
       {showTypeModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
