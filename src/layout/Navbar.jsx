@@ -8,6 +8,7 @@ import {
   UsersIcon,
   Bars3Icon,
   XMarkIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import logoimg from "../assets/images/logo (15).png";
 
@@ -27,13 +28,15 @@ function Navbar() {
   const navLinks = role === "assistant"
     ? [
         { to: "users", label: "جميع العملاء", icon: <UsersIcon className="w-5 h-5" /> },
-         { to: "labtests", label: "اضافة التحليل", icon: <BeakerIcon className="w-5 h-5" /> },
+        { to: "labtests", label: "اضافة التحليل", icon: <BeakerIcon className="w-5 h-5" /> },
+        { to: "notifications", label: "الإشعارات", icon: <BellIcon className="w-5 h-5" /> },
       ]
     : [
         { to: "labtests", label: "اضافة التحليل", icon: <BeakerIcon className="w-5 h-5" /> },
         { to: "unions", label: "اضافة نقابة", icon: <BuildingLibraryIcon className="w-5 h-5" /> },
         { to: "ads", label: "اضافة اعلان", icon: <MegaphoneIcon className="w-5 h-5" /> },
         { to: "users", label: "جميع العملاء", icon: <UsersIcon className="w-5 h-5" /> },
+        { to: "notifications", label: "الإشعارات", icon: <BellIcon className="w-5 h-5" /> },
       ];
 
   const isActive = (path) => location.pathname.includes(path);
