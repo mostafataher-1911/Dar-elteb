@@ -23,6 +23,7 @@ import DashboardLabTests from "./pages/DashboardLabTests";
 import Addads from "./pages/Addads";
 import { disableDarkMode } from './utils/disableDarkMode'
 import NotificationsPage from "./pages/NotificationsPage";
+import Alllabtest from "./pages/Alllabtest";
 
 function App() {
   useEffect(() => {
@@ -48,6 +49,7 @@ function App() {
             <Route path="unions" element={<Dashboardunion/>} />
             <Route path="ads" element={<Addads/>} />
              <Route path="notifications" element={<NotificationsPage/>} />
+              <Route path="Alllabtest" element={<Alllabtest/>} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />
